@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>MTG Deck Builder</title>
+    <link rel="stylesheet" type="text/css" href="/style.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.34/browser.min.js"></script>
+    <script type="text/babel">
+        //and here we put our script to handle responses n stuff
+        //first, we want a way to get the deck and put it into the deck section
+        const handleDeck = (xhr, location) => {
+            const output = document.querySelector(location);
+            if(xhr.getResponseHeader('content-type')!="application/json"){
+                return;//the method giving the output for this method to interpret
+                //should only give json
+                //and im not bothering w/ xml
+            }
+            const obj = JSON.parse(xhr.response);
+            if(obj.deck){
+                //first clear out the old deck
+                output.innerHTML = '';
+                for(let i=0; i<obj.deck.numCards; i++){
+                    displayCard(obj.deck[i], output);
+                }
+            }
+        }
+
+        //a lil utility
+        const displayCard = (cardData, displayLocation) => {
+            const card = document.createElement('div');
+            const cardName = document.createElement('h2');
+            cardName.textContent = `${cardData["name"]}`;
+            card.appendChild(cardName);
+            const cardType = document.createElement('h3');
+            cardType.textContent = `${cardData["type"]}`;
+            if(cardData["subtype"]){
+                cardType.textContent = `${cardData["type"]}:${cardData["subtype"]}`;
+            }
+            card.appendChild(cardType);
+            const cardCost = document.createElement('p');
+            cardCost.textContent = `${cardData["cost"]}`;
+            card.appendChild(cardCost);
+            const cardText = document.createElement('p');
+            cardText.textContent = `${cardData["text"]}`;
+            card.appendChild(cardText);
+            if(cardData["power"]&&cardData["toughness"]){
+                const cardPower = document.createElement('p');
+                cardPower.textContent = `${cardData["power"]}/${cardData["toughness"]}`;
+                card.appendChild(cardPower);
+            }
+            displayLocation.appendChild(card);
+        }
+
+        //tell the server to give us the info
+        const requestXhr = (urlInput, outputLocation) =>{
+            const url = urlInput;
+            const method = "GET";
+            const xhr = new XMLHttpRequest();
+            xhr.open(method, url);
+            xhr.setRequestHeader('Accept', 'application/json');
+            xhr.onload = () => handleDeck(xhr, outputLocation);
+            xhr.send();
+            return false;
+        }
+
+        const requestCards = () => {
+            requestXhr("/getCards", "#deck");
+        }
+
+        const shuffleDeck = () => {
+            requestXhr("/shuffleDeck", "#deck");
+        }
+
+        const drawHand = () => {
+            requestXhr("/drawHand", "#content");
+        }
+
+        //and finally, the init function that sets it all up
+        const init = () => {
+            requestCards();
+            const shuffleButton = document.querySelector("#shuffleDeck");
+            shuffleButton.addEventListener('click', shuffleDeck);
+            const drawHandButton = document.querySelector("#drawHand");
+            drawHandButton.addEventListener('click', drawHand);
+        }
+
+        window.onload = init;
+    </script>
+</head>
+
+<body>
+    <header>
+        <h1>MTG Deck Analysis</h1>
+    </header>
+    <section id="input">
+        <!--Buttons and stuff goes here-->
+        <button id="shuffleDeck">Shuffle Deck</button>
+        <button id="drawHand">Draw a hand of 7 cards</button>
+    </section>
+
+    <section id="content">
+        <!--Info that needs to change/respond goes here-->
+    </section>
+    <h1>Deck:</h1>
+    <section id="deck">
+        <!--List of all cards in the deck goes here-->
+    </section>
+</body>
+
+</html>
